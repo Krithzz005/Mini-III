@@ -12,7 +12,7 @@ const app = express();
 const allowedOrigins = [
   'https://mini-iii-rho.vercel.app',
   'https://mini-iii-1.vercel.app',
-  'https://mini-61oh8p7c2-krithzz005s-projects.vercel.app',
+  'https://mini3-fe28nk14w-ilakkiyaram05s-projects.vercel.app',
   'http://localhost:3000', // Local frontend
   'http://localhost:5501'  // API direct testing
 ];
