@@ -9,30 +9,11 @@ const app = express();
 
 // --- CORS: support multiple frontends ---
 const cors = require('cors');
-const allowedOrigins = [
-  'https://mini-iii-n.vercel.app',
-  /\.vercel\.app$/,   // allow all Vercel preview URLs
-  'http://localhost:3000'
-];
-
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true); // allow non-browser tools
-    if (allowedOrigins.some(o =>
-      (o instanceof RegExp && o.test(origin)) ||
-      (typeof o === 'string' && o === origin)
-    )) {
-      return callback(null, true);
-    }
-    return callback(new Error('Not allowed by CORS'));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
-}));
-
-
-
-
+   
+   app.use(cors({
+     origin: 'https://vault-frontend-gxkl.onrender.com',
+     credentials: true
+   }));
 
 app.use(express.json());
 
