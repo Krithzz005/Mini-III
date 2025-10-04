@@ -4,7 +4,6 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const cors = require('cors');
 
 const app = express();
 
@@ -17,17 +16,25 @@ const allowedOrigins = [
   'http://localhost:5173'
 ];
 
-
+const cors = require('cors');
+const allowedOrigins = [
+  'https://mini-iii-n.vercel.app',
+  'https://mini-iii-n-git-main-affrin332-affus-projects.vercel.app',
+  'https://mini-iii-l2wpx10er-affrin332-affus-projects.vercel.app',
+  'http://localhost:3000'
+];
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
-    callback(new Error('Not allowed by CORS'));
+    return callback(new Error('Not allowed by CORS'));
   },
-  methods: ['GET', 'POST', 'PATCH', 'DELETE'],
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
 }));
+
+
 
 
 app.use(express.json());
