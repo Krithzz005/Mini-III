@@ -1,5 +1,5 @@
 // Base URL for your backend API
-const API_BASE_URL="https://mini-iii-4hj6.onrender.com";
+const API_BASE_URL="https://mini-iii-4hj6.onrender.com/api";
 
 // --- DOM Elements ---
 const focusLoginContainer = document.getElementById('focus-login-container');
