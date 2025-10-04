@@ -1,5 +1,5 @@
 // Base URL for your backend API
-const API_BASE_URL="https://mini-iii-n7.onrender.com";
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 // --- DOM Elements ---
 const focusLoginContainer = document.getElementById('focus-login-container');
