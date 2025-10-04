@@ -37,6 +37,7 @@ app.use(cors({
 app.use(express.json());
 
 app.get('/', (req, res) => res.send('Hello! VaulToDo Server is running.'));
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 const PORT = process.env.PORT || 5501;
 
