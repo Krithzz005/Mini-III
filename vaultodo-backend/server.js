@@ -8,14 +8,6 @@ const crypto = require('crypto');
 const app = express();
 
 // --- CORS: support multiple frontends ---
-const allowedOrigins = [
-  'https://mini-iii-n.vercel.app',
-  'https://mini-iii-n-git-main-affrin332-affus-projects.vercel.app',
-  'https://mini-iii-l2wpx10er-affrin332-affus-projects.vercel.app',
-  'http://localhost:3000',
-  'http://localhost:5173'
-];
-
 const cors = require('cors');
 const allowedOrigins = [
   'https://mini-iii-n.vercel.app',
