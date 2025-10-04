@@ -19,9 +19,14 @@ const allowedOrigins = [
   'https://mini-iii-n-git-main-affrin332-affus-projects.vercel.app',
   'https://mini-iii-l2wpx10er-affrin332-affus-projects.vercel.app'
 ];
+
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin) return callback(null, true); // allow non-browser tools
+    if (allowedOrigins.some(o =>
+      (o instanceof RegExp && o.test(origin)) ||
+      (typeof o === 'string' && o === origin)
+    )) {
       return callback(null, true);
     }
     return callback(new Error('Not allowed by CORS'));
@@ -29,6 +34,7 @@ app.use(cors({
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
 }));
+
 
 
 
