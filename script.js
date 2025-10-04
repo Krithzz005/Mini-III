@@ -1,6 +1,5 @@
 // Base URL for your backend API
 const API_BASE_URL="https://mini-iii-4hj6.onrender.com/api";
-
 // --- DOM Elements ---
 const focusLoginContainer = document.getElementById('focus-login-container');
 const loginWindow = document.getElementById('login-window');
@@ -29,7 +28,6 @@ const showForgotPasswordLink = document.getElementById('show-forgot-password');
 const backToSigninLink = document.getElementById('back-to-signin');
 
 // Main App Elements
-const signoutButton = document.getElementById('signout-button');
 const addTaskForm = document.getElementById('add-task-form');
 const taskBoard = document.getElementById('task-board');
 const logo = document.getElementById('logo');
@@ -74,8 +72,36 @@ const genericModalMessage = document.getElementById('generic-modal-message');
 const genericModalActions = document.getElementById('generic-modal-actions');
 const genericModalCloseBtn = document.getElementById('generic-modal-close-btn');
 
+// NEW: User Profile DOM Elements
+const userMenuButton = document.getElementById('user-menu-button');
+const userDropdownMenu = document.getElementById('user-dropdown-menu');
+const userEmailDisplay = document.getElementById('user-email-display');
+const profileLink = document.getElementById('profile-link');
+const signoutLink = document.getElementById('signout-link');
+const profilePage = document.getElementById('profile-page');
+const profileForm = document.getElementById('profile-form');
+const profileEmailInput = document.getElementById('profile-email');
+const profileNameInput = document.getElementById('profile-name');
+const profilePasswordInput = document.getElementById('profile-password');
+const profileMessage = document.getElementById('profile-message');
+
+// NEW: File Storage DOM Elements (Added from your request)
+const fileStorageLink = document.getElementById('file-storage-link'); // Sidebar link
+const fileStoragePage = document.getElementById('file-storage-page'); // Main page container
+const fileUploadInput = document.getElementById('file-upload-input');
+const triggerUploadBtn = document.getElementById('trigger-upload-btn');
+const dropZone = document.getElementById('drop-zone');
+const fileListDisplay = document.getElementById('file-list');
+// NEW: Stored Files List Element
+const storedFilesList = document.getElementById('stored-files-list');
+
+
 // Global variable to store user role
 let currentUserRole = 'user'; // Default to user
+
+// NEW: Global array to hold locally stored files (simulated persistence)
+let storedFiles = []; 
+
 
 // --- Helper Functions ---
 
@@ -133,6 +159,54 @@ function showApp() {
 }
 
 /**
+ * Function to show a specific page (dashboard, admin, profile, or file-storage)
+ * @param {string} pageId - The ID of the page to show.
+ * @param {string} activeLinkId - The ID of the sidebar link to mark as active.
+ */
+function showPage(pageId, activeLinkId) {
+    const pages = [dashboardSection, adminDashboardSection, profilePage, fileStoragePage];
+    const links = [dashboardLink, adminPanelLink, profileLink, fileStorageLink];
+
+    pages.forEach(page => {
+        if (page && page.id === pageId) {
+            page.classList.remove('hidden');
+        } else if (page) {
+            page.classList.add('hidden');
+        }
+    });
+
+    // Update sidebar active state
+    links.forEach(link => {
+        if (link) {
+            // Check if the link is nested in an <li> (like dashboardLink and adminPanelLink usually are)
+            const parentLi = link.closest('li');
+            if (parentLi) {
+                if (link.id === activeLinkId) {
+                    parentLi.classList.add('active');
+                } else {
+                    parentLi.classList.remove('active');
+                }
+            } else if (link.id === activeLinkId) {
+                // Handle links not in <li> (like profileLink in the dropdown)
+                link.classList.add('active');
+            } else {
+                link.classList.remove('active');
+            }
+        }
+    });
+
+    // Handle Admin Panel button state separately if needed
+    if (adminPanelLink) {
+        if (activeLinkId === 'admin-panel-link') {
+            adminPanelLink.classList.add('active');
+        } else {
+            adminPanelLink.classList.remove('active');
+        }
+    }
+}
+
+
+/**
  * Shows a generic modal for alerts or confirmations.
  * @param {string} title - The title for the modal.
  * @param {string} message - The message content for the modal.
@@ -175,12 +249,101 @@ function hideGenericModal() {
 }
 
 // Event listeners for generic modal close button and backdrop
-genericModalCloseBtn.addEventListener('click', hideGenericModal);
-genericModal.addEventListener('click', (e) => {
-    if (e.target === genericModal) {
-        hideGenericModal();
+if (genericModalCloseBtn) genericModalCloseBtn.addEventListener('click', hideGenericModal);
+if (genericModal) {
+    genericModal.addEventListener('click', (e) => {
+        if (e.target === genericModal) {
+            hideGenericModal();
+        }
+    });
+}
+
+// --- NEW FILE STORAGE FUNCTIONS ---
+
+// NEW Function: Renders the "Your Stored Files" list from the global array
+function renderStoredFiles() {
+    if (!storedFilesList) return;
+
+    storedFilesList.innerHTML = ''; // Clear the current list (including placeholder)
+
+    if (storedFiles.length === 0) {
+        storedFilesList.innerHTML = '<li class="placeholder-text">No files currently stored.</li>';
+        return;
     }
-});
+
+    storedFiles.forEach((file, index) => {
+        const li = document.createElement('li');
+        li.style.borderBottom = '1px solid var(--border-color)';
+        li.style.padding = '0.5rem 0';
+        li.style.display = 'flex';
+        li.style.justifyContent = 'space-between';
+        li.style.alignItems = 'center';
+        
+        li.innerHTML = `
+            <div>
+                <strong>${file.name}</strong> 
+                <span style="font-size:0.8em; opacity:0.7;">(Uploaded: ${file.uploadDate} - ${(file.size / 1024).toFixed(2)} KB)</span>
+            </div>
+            <button class="delete-file-btn vault-btn secondary" data-index="${index}" style="padding: 0.2rem 0.5rem; background: var(--high-priority-color); color: white; margin-left: 10px;">Delete</button>
+        `;
+        storedFilesList.appendChild(li);
+    });
+
+    // Add event listeners for the new Delete buttons
+    storedFilesList.querySelectorAll('.delete-file-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const indexToDelete = parseInt(e.target.dataset.index);
+            // In a real app, this would be deleteStoredFile(file.id) 
+            deleteStoredFile(indexToDelete); 
+        });
+    });
+}
+
+// NEW Function: Delete Stored File (Simulation)
+function deleteStoredFile(index) {
+    // 1. Remove file from the array (Simulated server deletion)
+    if (index > -1 && index < storedFiles.length) {
+        storedFiles.splice(index, 1);
+    }
+    
+    // 2. Re-render the list to update the UI
+    renderStoredFiles();
+}
+
+// NEW Function: Simulate File Upload and Update Stored List
+function simulateFileUpload(filesToUpload) {
+    if (!triggerUploadBtn || !fileListDisplay) return;
+
+    // 1. Show Loading State
+    const originalText = triggerUploadBtn.textContent;
+    triggerUploadBtn.textContent = 'Uploading... Please wait.';
+    triggerUploadBtn.disabled = true;
+
+    // 2. Simulate Server Delay (1.5 second)
+    setTimeout(() => {
+        // 3. Update the global storedFiles array and the UI list
+        filesToUpload.forEach(file => {
+            const fileData = {
+                name: file.name,
+                size: file.size,
+                uploadDate: new Date().toLocaleDateString()
+            };
+            storedFiles.push(fileData);
+        });
+
+        // 4. Update the "Your Stored Files" section
+        renderStoredFiles();
+
+        // 5. Reset the Upload Area and Show Success
+        fileListDisplay.innerHTML = `<p style="color: var(--low-priority-color); font-weight: bold; margin: 0;">Upload Success! ${filesToUpload.length} file(s) added.</p>`;
+        triggerUploadBtn.textContent = originalText;
+        triggerUploadBtn.disabled = false;
+
+        // Clear the actual input field so the user can select new files
+        if (fileUploadInput) fileUploadInput.value = null; 
+        
+    }, 1500); 
+}
 
 
 // --- 2. AUTHENTICATION LOGIC (MongoDB Backend) ---
@@ -193,139 +356,134 @@ async function checkAuthStatus() {
         if (decodedToken && decodedToken.role) {
             currentUserRole = decodedToken.role;
             if (currentUserRole === 'admin') {
-                adminPanelLink.classList.remove('hidden');
+                if (adminPanelLink) adminPanelLink.classList.remove('hidden');
             } else {
-                adminPanelLink.classList.add('hidden');
+                if (adminPanelLink) adminPanelLink.classList.add('hidden');
             }
         }
         showApp();
+        showPage('dashboard', 'dashboard-link'); // Pass 'dashboard-link' as active link ID
         fetchTasks(); // Load tasks for regular users
+        fetchUserProfile();
     } else {
         showLogin();
     }
 }
 
 // Handles user sign-up - No automatic login
-signupForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    displayMessage(signupMessage, 'Registering...', '');
-    const email = document.getElementById('signup-email').value;
-    const password = document.getElementById('signup-password').value;
+if (signupForm) {
+    signupForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        displayMessage(signupMessage, 'Registering...', '');
+        const email = document.getElementById('signup-email').value;
+        const password = document.getElementById('signup-password').value;
 
-    try {
-        const response = await fetch(`${API_BASE_URL}/auth/signup`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-        });
+        try {
+            const response = await fetch(`${API_BASE_URL}/auth/signup`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
 
-        const data = await response.json();
+            const data = await response.json();
 
-        if (response.ok) {
-            displayMessage(signupMessage, data.message || 'Account created successfully! Please sign in.', 'success');
-            // Redirect to sign-in view after successful registration
-            signupView.classList.add('hidden');
-            signinView.classList.remove('hidden');
-            // Clear signup form
-            document.getElementById('signup-email').value = '';
-            document.getElementById('signup-password').value = '';
-        } else {
-            displayMessage(signupMessage, data.error || 'Signup failed.', 'error');
+            if (response.ok) {
+                displayMessage(signupMessage, data.message || 'Account created successfully! Please sign in.', 'success');
+                // Redirect to sign-in view after successful registration
+                signupView.classList.add('hidden');
+                signinView.classList.remove('hidden');
+                // Clear signup form
+                document.getElementById('signup-email').value = '';
+                document.getElementById('signup-password').value = '';
+            } else {
+                displayMessage(signupMessage, data.error || 'Signup failed.', 'error');
+            }
+        } catch (error) {
+            console.error('Signup fetch error:', error);
+            displayMessage(signupMessage, 'An error occurred during signup. Please try again.', 'error');
         }
-    } catch (error) {
-        console.error('Signup fetch error:', error);
-        displayMessage(signupMessage, 'An error occurred during signup. Please try again.', 'error');
-    }
-});
+    });
+}
 
 // Handles user sign-in
-signinForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    displayMessage(signinMessage, 'Verifying...', '');
-    const email = document.getElementById('signin-email').value;
-    const password = document.getElementById('signin-password').value;
+if (signinForm) {
+    signinForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        displayMessage(signinMessage, 'Verifying...', '');
+        const email = document.getElementById('signin-email').value;
+        const password = document.getElementById('signin-password').value;
 
-    try {
-        const response = await fetch(`${API_BASE_URL}/auth/signin`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-        });
+        try {
+            const response = await fetch(`${API_BASE_URL}/auth/signin`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
 
-        const data = await response.json();
+            const data = await response.json();
 
-        if (response.ok) {
-            localStorage.setItem('userToken', data.token); // Store the JWT token
-            const decodedToken = decodeJwt(data.token);
-            if (decodedToken && decodedToken.role) {
-                currentUserRole = decodedToken.role;
-                if (currentUserRole === 'admin') {
-                    adminPanelLink.classList.remove('hidden');
-                } else {
-                    adminPanelLink.classList.add('hidden');
+            if (response.ok) {
+                localStorage.setItem('userToken', data.token); // Store the JWT token
+                const decodedToken = decodeJwt(data.token);
+                if (decodedToken && decodedToken.role) {
+                    currentUserRole = decodedToken.role;
+                    if (currentUserRole === 'admin') {
+                        if (adminPanelLink) adminPanelLink.classList.remove('hidden');
+                    } else {
+                        if (adminPanelLink) adminPanelLink.classList.add('hidden');
+                    }
                 }
-            }
 
-            loginWindow.classList.add('success'); // Visual feedback for successful login
-            setTimeout(() => {
-                showApp();
-                fetchTasks(); // Load tasks after successful login
-            }, 600);
-        } else {
-            displayMessage(signinMessage, data.error || 'Login failed. Check your credentials.', 'error');
+                loginWindow.classList.add('success'); // Visual feedback for successful login
+                setTimeout(() => {
+                    showApp();
+                    showPage('dashboard', 'dashboard-link');
+                    fetchTasks(); // Load tasks after successful login
+                    fetchUserProfile();
+                }, 600);
+            } else {
+                displayMessage(signinMessage, data.error || 'Login failed. Check your credentials.', 'error');
+            }
+        } catch (error) {
+            console.error('Signin fetch error:', error);
+            displayMessage(signinMessage, 'An error occurred during login. Please try again.', 'error');
         }
-    } catch (error) {
-        console.error('Signin fetch error:', error);
-        displayMessage(signinMessage, 'An error occurred during login. Please try again.', 'error');
-    }
-});
+    });
+}
 
 // Handles forgot password request
-forgotPasswordForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    displayMessage(forgotPasswordMessage, 'Sending reset link...', '');
-    const email = document.getElementById('forgot-password-email').value;
+if (forgotPasswordForm) {
+    forgotPasswordForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        displayMessage(forgotPasswordMessage, 'Sending reset link...', '');
+        const email = document.getElementById('forgot-password-email').value;
 
-    try {
-        const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email })
-        });
+        try {
+            const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
 
-        const data = await response.json();
+            const data = await response.json();
 
-        if (response.ok) {
-            displayMessage(forgotPasswordMessage, data.message, 'success');
-            // Clear email field
-            document.getElementById('forgot-password-email').value = '';
-            console.warn("NOTE: In a real app, check your email for the reset link (check backend console for token).");
-        } else {
-            displayMessage(forgotPasswordMessage, data.error || 'Failed to send reset link.', 'error');
+            if (response.ok) {
+                displayMessage(forgotPasswordMessage, data.message, 'success');
+                // Clear email field
+                document.getElementById('forgot-password-email').value = '';
+                console.warn("NOTE: In a real app, check your email for the reset link (check backend console for token).");
+            } else {
+                displayMessage(forgotPasswordMessage, data.error || 'Failed to send reset link.', 'error');
+            }
+        } catch (error) {
+            console.error('Forgot password fetch error:', error);
+            displayMessage(forgotPasswordMessage, 'An error occurred. Please try again.', 'error');
         }
-    } catch (error) {
-        console.error('Forgot password fetch error:', error);
-        displayMessage(forgotPasswordMessage, 'An error occurred. Please try again.', 'error');
-    }
-});
-
-// Handles user sign-out
-signoutButton.addEventListener('click', () => {
-    localStorage.removeItem('userToken'); // Clear the token
-    showLogin(); // Go back to login screen
-    // Clear tasks from the board visually
-    document.querySelectorAll('.task-column').forEach(col => {
-        col.querySelectorAll('.task-card').forEach(card => card.remove());
     });
-    // Hide admin section if it was visible
-    dashboardSection.classList.remove('hidden');
-    adminDashboardSection.classList.add('hidden');
-    adminPanelLink.classList.add('hidden'); // Ensure admin link is hidden
-    currentUserRole = 'user'; // Reset role on signout
-});
+}
 
 // --- Auth View Toggling ---
-showSignup.addEventListener('click', (e) => {
+if (showSignup) showSignup.addEventListener('click', (e) => {
     e.preventDefault();
     displayMessage(signupMessage, '', ''); // Clear messages
     signinView.classList.add('hidden');
@@ -333,7 +491,7 @@ showSignup.addEventListener('click', (e) => {
     signupView.classList.remove('hidden');
 });
 
-showSignin.addEventListener('click', (e) => {
+if (showSignin) showSignin.addEventListener('click', (e) => {
     e.preventDefault();
     displayMessage(signinMessage, '', ''); // Clear messages
     signupView.classList.add('hidden');
@@ -341,7 +499,7 @@ showSignin.addEventListener('click', (e) => {
     signinView.classList.remove('hidden');
 });
 
-showForgotPasswordLink.addEventListener('click', (e) => {
+if (showForgotPasswordLink) showForgotPasswordLink.addEventListener('click', (e) => {
     e.preventDefault();
     displayMessage(forgotPasswordMessage, '', ''); // Clear messages
     signinView.classList.add('hidden');
@@ -349,7 +507,7 @@ showForgotPasswordLink.addEventListener('click', (e) => {
     forgotPasswordView.classList.remove('hidden');
 });
 
-backToSigninLink.addEventListener('click', (e) => {
+if (backToSigninLink) backToSigninLink.addEventListener('click', (e) => {
     e.preventDefault();
     displayMessage(signinMessage, '', ''); // Clear messages
     forgotPasswordView.classList.add('hidden');
@@ -394,9 +552,13 @@ const fetchTasks = async () => {
 // Renders tasks onto the Kanban board columns
 const renderTasks = (tasks) => {
     // Clear existing tasks from all columns
-    document.getElementById('To Do').innerHTML = '<h2>To Do</h2>';
-    document.getElementById('In Progress').innerHTML = '<h2>In Progress</h2>';
-    document.getElementById('Done').innerHTML = '<h2>Done</h2>';
+    const todoColumn = document.getElementById('To Do');
+    const inProgressColumn = document.getElementById('In Progress');
+    const doneColumn = document.getElementById('Done');
+
+    if (todoColumn) todoColumn.innerHTML = '<h2>To Do</h2>';
+    if (inProgressColumn) inProgressColumn.innerHTML = '<h2>In Progress</h2>';
+    if (doneColumn) doneColumn.innerHTML = '<h2>Done</h2>';
 
     tasks.forEach(task => {
         const column = document.getElementById(task.status);
@@ -431,88 +593,92 @@ const renderTasks = (tasks) => {
 };
 
 // Adds a new task
-addTaskForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const titleInput = document.getElementById('task-title');
-    const priorityInput = document.getElementById('task-priority');
-    const dueDateInput = document.getElementById('task-due-date'); // New due date input
+if (addTaskForm) {
+    addTaskForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const titleInput = document.getElementById('task-title');
+        const priorityInput = document.getElementById('task-priority');
+        const dueDateInput = document.getElementById('task-due-date'); // New due date input
 
-    const title = titleInput.value.trim();
-    const priority = priorityInput.value;
-    const due_date = dueDateInput.value || null; // Capture due date, or null if empty
-    const token = localStorage.getItem('userToken');
+        const title = titleInput.value.trim();
+        const priority = priorityInput.value;
+        const due_date = dueDateInput.value || null; // Capture due date, or null if empty
+        const token = localStorage.getItem('userToken');
 
-    if (title && token) {
-        try {
-            const response = await fetch(`${API_BASE_URL}/tasks`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ title, priority, due_date, status: 'To Do' })
-            });
+        if (title && token) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/tasks`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ title, priority, due_date, status: 'To Do' })
+                });
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                // Task added successfully, refresh the task list
+                titleInput.value = '';
+                priorityInput.value = 'Medium'; // Reset to default
+                dueDateInput.value = ''; // Clear date input
+                fetchTasks();
+            } catch (error) {
+                console.error('Error adding task:', error);
+                showGenericModal(
+                    "Error",
+                    "Failed to add task. Please try again.",
+                    [{ text: "OK", className: "vault-btn primary" }]
+                );
             }
-
-            // Task added successfully, refresh the task list
-            titleInput.value = '';
-            priorityInput.value = 'Medium'; // Reset to default
-            dueDateInput.value = ''; // Clear date input
-            fetchTasks();
-        } catch (error) {
-            console.error('Error adding task:', error);
-            showGenericModal(
-                "Error",
-                "Failed to add task. Please try again.",
-                [{ text: "OK", className: "vault-btn primary" }]
-            );
         }
-    }
-});
+    });
+}
 
 // Handles task deletion via event delegation
-taskBoard.addEventListener('click', async (e) => {
-    if (e.target.classList.contains('delete-task-btn')) {
-        const taskId = e.target.getAttribute('data-task-id');
-        
-        showGenericModal(
-            "Confirm Deletion",
-            "Are you sure you want to delete this task?",
-            [
-                { text: "Delete", className: "vault-btn primary", onClick: async () => {
-                    const token = localStorage.getItem('userToken');
-                    if (!token) return;
+if (taskBoard) {
+    taskBoard.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('delete-task-btn')) {
+            const taskId = e.target.getAttribute('data-task-id');
+            
+            showGenericModal(
+                "Confirm Deletion",
+                "Are you sure you want to delete this task?",
+                [
+                    { text: "Delete", className: "vault-btn primary", onClick: async () => {
+                        const token = localStorage.getItem('userToken');
+                        if (!token) return;
 
-                    try {
-                        const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
-                            method: 'DELETE',
-                            headers: { 'Authorization': `Bearer ${token}` }
-                        });
+                        try {
+                            const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
+                                method: 'DELETE',
+                                headers: { 'Authorization': `Bearer ${token}` }
+                            });
 
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
+                            fetchTasks(); // Refresh tasks after deletion
+                        } catch (error) {
+                            console.error('Error deleting task:', error);
+                            showGenericModal(
+                                "Error",
+                                "Failed to delete task. Please try again.",
+                                [{ text: "OK", className: "vault-btn primary" }]
+                            );
                         }
-                        fetchTasks(); // Refresh tasks after deletion
-                    } catch (error) {
-                        console.error('Error deleting task:', error);
-                        showGenericModal(
-                            "Error",
-                            "Failed to delete task. Please try again.",
-                            [{ text: "OK", className: "vault-btn primary" }]
-                        );
-                    }
-                }},
-                { text: "Cancel", className: "vault-btn secondary" }
-            ]
-        );
-    }
-});
+                    }},
+                    { text: "Cancel", className: "vault-btn secondary" }
+                ]
+            );
+        }
+    });
+}
 
 // --- Search and Filter Logic ---
-taskSearchInput.addEventListener('input', filterTasks);
+if (taskSearchInput) taskSearchInput.addEventListener('input', filterTasks);
 
 function filterTasks() {
     const searchTerm = taskSearchInput.value.toLowerCase();
@@ -579,131 +745,137 @@ window.drop = async (e) => {
 };
 
 // --- 5. UI & SECRET VAULT LOGIC ---
-themeToggle.addEventListener('click', () => document.body.classList.toggle('dark-mode'));
+if (themeToggle) themeToggle.addEventListener('click', () => document.body.classList.toggle('dark-mode'));
 
 let clickCount = 0;
-logo.addEventListener('click', () => {
-    clickCount++;
-    setTimeout(() => { clickCount = 0; }, 600); // Reset count if not clicked rapidly
-    if (clickCount === 3) {
-        clickCount = 0;
-        vaultModal.classList.remove('hidden'); // Show the vault modal
-    }
-});
-closeVaultModal.addEventListener('click', () => vaultModal.classList.add('hidden')); // Hide vault modal
+if (logo) {
+    logo.addEventListener('click', () => {
+        clickCount++;
+        setTimeout(() => { clickCount = 0; }, 600); // Reset count if not clicked rapidly
+        if (clickCount === 3) {
+            clickCount = 0;
+            if (vaultModal) vaultModal.classList.remove('hidden'); // Show the vault modal
+        }
+    });
+}
+if (closeVaultModal) closeVaultModal.addEventListener('click', () => {
+    if (vaultModal) vaultModal.classList.add('hidden');
+}); // Hide vault modal
 
 // --- 6. Menu Toggle Logic ---
-menuToggle.addEventListener('click', () => {
-    sidebar.classList.toggle('collapsed');
-});
+if (menuToggle) {
+    menuToggle.addEventListener('click', () => {
+        if (sidebar) sidebar.classList.toggle('collapsed');
+    });
+}
 
 // --- Task Details Modal Logic ---
 function showTaskDetailsModal(task) {
     currentTaskToEdit = task; // Store the task object being viewed/edited
-    modalTaskTitle.textContent = task.title;
-    modalTaskStatus.textContent = task.status;
-    modalTaskPriority.textContent = task.priority;
-    modalTaskDueDate.textContent = task.due_date ? new Date(task.due_date).toLocaleDateString() : 'N/A';
-    modalTaskCreatedAt.textContent = new Date(task.created_at).toLocaleString();
-    modalTaskDescription.value = task.description || ''; // Display existing description or empty string
+    if (modalTaskTitle) modalTaskTitle.textContent = task.title;
+    if (modalTaskStatus) modalTaskStatus.textContent = task.status;
+    if (modalTaskPriority) modalTaskPriority.textContent = task.priority;
+    if (modalTaskDueDate) modalTaskDueDate.textContent = task.due_date ? new Date(task.due_date).toLocaleDateString() : 'N/A';
+    if (modalTaskCreatedAt) modalTaskCreatedAt.textContent = new Date(task.created_at).toLocaleString();
+    if (modalTaskDescription) modalTaskDescription.value = task.description || ''; // Display existing description or empty string
 
-    taskDetailsModal.classList.remove('hidden');
+    if (taskDetailsModal) taskDetailsModal.classList.remove('hidden');
     document.body.classList.add('modal-open'); // Add a class to body to prevent scrolling
 }
 
 function hideTaskDetailsModal() {
-    taskDetailsModal.classList.add('hidden');
+    if (taskDetailsModal) taskDetailsModal.classList.add('hidden');
     document.body.classList.remove('modal-open');
     currentTaskToEdit = null; // Clear the task being edited
 }
 
 // Event listeners for task details modal
-modalCloseBtn.addEventListener('click', hideTaskDetailsModal);
+if (modalCloseBtn) modalCloseBtn.addEventListener('click', hideTaskDetailsModal);
 // Close modal if backdrop is clicked
-taskDetailsModal.addEventListener('click', (e) => {
-    if (e.target === taskDetailsModal) {
-        hideTaskDetailsModal();
-    }
-});
+if (taskDetailsModal) {
+    taskDetailsModal.addEventListener('click', (e) => {
+        if (e.target === taskDetailsModal) {
+            hideTaskDetailsModal();
+        }
+    });
+}
 
 // Save updated task details (e.g., description)
-saveTaskDetailsBtn.addEventListener('click', async () => {
-    if (!currentTaskToEdit) return;
+if (saveTaskDetailsBtn) {
+    saveTaskDetailsBtn.addEventListener('click', async () => {
+        if (!currentTaskToEdit) return;
 
-    const newDescription = modalTaskDescription.value;
-    const token = localStorage.getItem('userToken');
+        const newDescription = modalTaskDescription.value;
+        const token = localStorage.getItem('userToken');
 
-    try {
-        const response = await fetch(`${API_BASE_URL}/tasks/${currentTaskToEdit._id}`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ description: newDescription })
-        });
+        try {
+            const response = await fetch(`${API_BASE_URL}/tasks/${currentTaskToEdit._id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ description: newDescription })
+            });
 
-        if (response.ok) {
-            currentTaskToEdit.description = newDescription; // Update local object
-            hideTaskDetailsModal();
-            fetchTasks(); // Re-fetch tasks to ensure UI consistency if needed (though not strictly for description)
-        } else {
-            const errorData = await response.json();
-            console.error('Error saving task details:', errorData.error);
+            if (response.ok) {
+                currentTaskToEdit.description = newDescription; // Update local object
+                hideTaskDetailsModal();
+                fetchTasks(); // Re-fetch tasks to ensure UI consistency if needed (though not strictly for description)
+            } else {
+                const errorData = await response.json();
+                console.error('Error saving task details:', errorData.error);
+                showGenericModal(
+                    "Error",
+                    "Failed to save task details: " + (errorData.error || 'Unknown error'),
+                    [{ text: "OK", className: "vault-btn primary" }]
+                );
+            }
+        } catch (error) {
+            console.error('Error in saveTaskDetails fetch:', error);
             showGenericModal(
                 "Error",
-                "Failed to save task details: " + (errorData.error || 'Unknown error'),
+                "An error occurred while saving task details.",
                 [{ text: "OK", className: "vault-btn primary" }]
             );
         }
-    } catch (error) {
-        console.error('Error in saveTaskDetails fetch:', error);
-        showGenericModal(
-            "Error",
-            "An error occurred while saving task details.",
-            [{ text: "OK", className: "vault-btn primary" }]
-        );
-    }
-});
+    });
+}
 
 // --- ADMIN PANEL LOGIC ---
 
 // Function to show the admin dashboard and hide the regular dashboard
 function showAdminDashboard() {
-    dashboardSection.classList.add('hidden');
-    adminDashboardSection.classList.remove('hidden');
-    // Update active state in sidebar
-    dashboardLink.parentElement.classList.remove('active');
-    adminPanelLink.classList.add('active');
+    showPage('admin-dashboard-section', 'admin-panel-link');
     fetchAllUsers();
     fetchAllTasksForAdmin(); // Fetch all tasks for admin view
 }
 
 // Function to show the regular dashboard and hide the admin dashboard
 function showRegularDashboard() {
-    adminDashboardSection.classList.add('hidden');
-    dashboardSection.classList.remove('hidden');
-    // Update active state in sidebar
-    adminPanelLink.classList.remove('active');
-    dashboardLink.parentElement.classList.add('active');
+    showPage('dashboard', 'dashboard-link');
     fetchTasks(); // Re-fetch tasks for regular user view
 }
 
 // Event listener for Admin Panel link
-showAdminPanelBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    if (currentUserRole === 'admin') {
-        showAdminDashboard();
-    } else {
-        showGenericModal("Access Denied", "You do not have administrative privileges.", [{ text: "OK", className: "vault-btn primary" }]);
-    }
-});
+if (showAdminPanelBtn) {
+    showAdminPanelBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (currentUserRole === 'admin') {
+            showAdminDashboard();
+        } else {
+            showGenericModal("Access Denied", "You do not have administrative privileges.", [{ text: "OK", className: "vault-btn primary" }]);
+        }
+    });
+}
 
 // Event listener for Dashboard link
-dashboardLink.addEventListener('click', (e) => {
-    e.preventDefault();
-    showRegularDashboard();
-});
+if (dashboardLink) {
+    dashboardLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        showRegularDashboard();
+    });
+}
 
 
 // Fetches all users for admin view
@@ -711,11 +883,11 @@ const fetchAllUsers = async () => {
     const token = localStorage.getItem('userToken');
     if (!token || currentUserRole !== 'admin') {
         console.warn('Not authorized to fetch all users.');
-        adminUsersList.innerHTML = '<p class="placeholder-text">Access Denied: Admin privileges required.</p>';
+        if (adminUsersList) adminUsersList.innerHTML = '<p class="placeholder-text">Access Denied: Admin privileges required.</p>';
         return;
     }
 
-    adminUsersList.innerHTML = '<p class="placeholder-text">Loading users...</p>'; // Show loading indicator
+    if (adminUsersList) adminUsersList.innerHTML = '<p class="placeholder-text">Loading users...</p>'; // Show loading indicator
 
     try {
         const response = await fetch(`${API_BASE_URL}/admin/users`, {
@@ -726,7 +898,7 @@ const fetchAllUsers = async () => {
         if (!response.ok) {
             if (response.status === 401 || response.status === 403) {
                 showGenericModal("Access Denied", "You do not have permission to view users.", [{ text: "OK", className: "vault-btn primary" }]);
-                adminUsersList.innerHTML = '<p class="placeholder-text">Access Denied: Admin privileges required.</p>';
+                if (adminUsersList) adminUsersList.innerHTML = '<p class="placeholder-text">Access Denied: Admin privileges required.</p>';
             }
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -735,12 +907,13 @@ const fetchAllUsers = async () => {
         renderUsersForAdmin(users);
     } catch (error) {
         console.error('Error fetching all users:', error);
-        adminUsersList.innerHTML = '<p class="placeholder-text">Failed to load users.</p>';
+        if (adminUsersList) adminUsersList.innerHTML = '<p class="placeholder-text">Failed to load users.</p>';
     }
 };
 
 // Renders users in the admin user list with role dropdown and save button
 const renderUsersForAdmin = (users) => {
+    if (!adminUsersList) return;
     adminUsersList.innerHTML = ''; // Clear existing list
     if (users.length === 0) {
         adminUsersList.innerHTML = '<p class="placeholder-text">No users found.</p>';
@@ -785,31 +958,29 @@ const renderUsersForAdmin = (users) => {
                 roleSelect.classList.add(`role-${roleSelect.value}`);
             }
         });
-    });
-
-    // Add event listeners for delete user buttons
-    adminUsersList.querySelectorAll('.delete-user-btn').forEach(button => {
-        button.addEventListener('click', (e) => {
+        
+        // --- Add event listeners for buttons within the card ---
+        
+        // Delete User Button
+        userCard.querySelector('.delete-user-btn').addEventListener('click', (e) => {
             const userIdToDelete = e.target.dataset.userId;
             showGenericModal(
                 "Confirm User Deletion",
-                `Are you sure you want to delete user: ${userIdToDelete}? This action cannot be undone.`,
+                `Are you sure you want to delete user: ${user.email}? This action cannot be undone.`,
                 [
                     { text: "Delete User", className: "vault-btn primary", onClick: () => deleteUser(userIdToDelete) },
                     { text: "Cancel", className: "vault-btn secondary" }
                 ]
             );
         });
-    });
 
-    // Add event listeners for save role buttons
-    adminUsersList.querySelectorAll('.save-role-btn').forEach(button => {
-        button.addEventListener('click', (e) => {
+        // Save Role Button
+        saveRoleBtn.addEventListener('click', (e) => {
             const userIdToUpdate = e.target.dataset.userId;
-            const newRole = userCard.querySelector(`#role-select-${userIdToUpdate}`).value; // Get selected value
+            const newRole = roleSelect.value;
             showGenericModal(
                 "Confirm Role Change",
-                `Are you sure you want to change the role of ${userCard.querySelector('h3').textContent} to "${newRole}"?`,
+                `Are you sure you want to change the role of ${user.email} to "${newRole}"?`,
                 [
                     { text: "Change Role", className: "vault-btn primary", onClick: () => updateUserRole(userIdToUpdate, newRole) },
                     { text: "Cancel", className: "vault-btn secondary" }
@@ -883,11 +1054,11 @@ const fetchAllTasksForAdmin = async () => {
     const token = localStorage.getItem('userToken');
     if (!token || currentUserRole !== 'admin') {
         console.warn('Not authorized to fetch all tasks for admin.');
-        adminAllTasksList.innerHTML = '<p class="placeholder-text">Access Denied: Admin privileges required.</p>';
+        if (adminAllTasksList) adminAllTasksList.innerHTML = '<p class="placeholder-text">Access Denied: Admin privileges required.</p>';
         return;
     }
 
-    adminAllTasksList.innerHTML = '<p class="placeholder-text">Loading all tasks...</p>'; // Show loading indicator
+    if (adminAllTasksList) adminAllTasksList.innerHTML = '<p class="placeholder-text">Loading all tasks...</p>'; // Show loading indicator
 
     try {
         const response = await fetch(`${API_BASE_URL}/admin/tasks`, { // Assuming a new admin endpoint for all tasks
@@ -898,7 +1069,7 @@ const fetchAllTasksForAdmin = async () => {
         if (!response.ok) {
             if (response.status === 401 || response.status === 403) {
                 showGenericModal("Access Denied", "You do not have permission to view all tasks.", [{ text: "OK", className: "vault-btn primary" }]);
-                adminAllTasksList.innerHTML = '<p class="placeholder-text">Access Denied: Admin privileges required.</p>';
+                if (adminAllTasksList) adminAllTasksList.innerHTML = '<p class="placeholder-text">Access Denied: Admin privileges required.</p>';
             }
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -907,12 +1078,13 @@ const fetchAllTasksForAdmin = async () => {
         renderAllTasksForAdmin(tasks);
     } catch (error) {
         console.error('Error fetching all tasks for admin:', error);
-        adminAllTasksList.innerHTML = '<p class="placeholder-text">Failed to load all tasks.</p>';
+        if (adminAllTasksList) adminAllTasksList.innerHTML = '<p class="placeholder-text">Failed to load all tasks.</p>';
     }
 };
 
 // Renders all tasks in the admin all tasks list
 const renderAllTasksForAdmin = (tasks) => {
+    if (!adminAllTasksList) return;
     adminAllTasksList.innerHTML = ''; // Clear existing list
     if (tasks.length === 0) {
         adminAllTasksList.innerHTML = '<p class="placeholder-text">No tasks found in the system.</p>';
@@ -931,11 +1103,9 @@ const renderAllTasksForAdmin = (tasks) => {
             <p>Status: ${task.status}</p>
             <p>Priority: ${task.priority}</p>
             <p>Due: ${dueDate}</p>
-            <p>Created by: ${task.userEmail || 'N/A'}</p> <!-- Assuming user email is returned by backend -->
-            <div class="task-actions">
+            <p>Created by: ${task.userEmail || 'N/A'}</p> <div class="task-actions">
                 <button class="delete-admin-task-btn" data-task-id="${task._id}" title="Delete Task">×</button>
-                <!-- Add edit functionality for admin to edit any task -->
-            </div>
+                </div>
         `;
         adminAllTasksList.appendChild(taskCard);
     });
@@ -983,23 +1153,235 @@ const deleteAdminTask = async (taskId) => {
     }
 };
 
+// --- Profile Form & Data Logic ---
+
+// Function to fetch and display user data
+const fetchUserProfile = async () => {
+    const token = localStorage.getItem('userToken');
+    if (!token) return;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/profile`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            const user = await response.json();
+            // userEmailDisplay.textContent = user.email; // Display user's email in the header
+            updateUserProfileUI(user);
+        }
+    } catch (error) {
+        console.error('Error fetching user profile:', error);
+    }
+};
+
+// Populate the profile form with user data
+function updateUserProfileUI(user) {
+    if (profileEmailInput) profileEmailInput.value = user.email;
+    if (profileNameInput) profileNameInput.value = user.name || ''; // Use user's name if available, otherwise empty string
+}
+
+// Event listener for the Profile link
+if (profileLink) {
+    profileLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (userDropdownMenu) userDropdownMenu.classList.add('hidden'); // Hide the dropdown
+        if (userMenuButton) userMenuButton.classList.remove('active'); // Remove active class from button
+        showPage('profile-page', 'profile-link'); // Show the profile page
+    });
+}
+
+// Update sign out logic to use the new dropdown link
+if (signoutLink) {
+    signoutLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        localStorage.removeItem('userToken');
+        showLogin();
+        // userEmailDisplay.textContent = ''; // Clear the user email display in the header on signout
+    });
+}
+
+// --- Profile Form Submission Logic ---
+if (profileForm) {
+    profileForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (profileMessage) {
+            profileMessage.textContent = 'Saving changes...';
+            profileMessage.className = 'message';
+        }
+
+        const token = localStorage.getItem('userToken');
+        const name = profileNameInput.value;
+        const password = profilePasswordInput.value;
+
+        const body = { name };
+        if (password) {
+            body.password = password;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/profile`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(body)
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                if (profileMessage) {
+                    profileMessage.textContent = data.message || 'Profile updated successfully!';
+                    profileMessage.className = 'message success';
+                }
+                if (profilePasswordInput) profilePasswordInput.value = ''; // Clear password field
+                
+                // Re-fetch profile to ensure UI is updated with new data
+                fetchUserProfile();
+
+            } else {
+                if (profileMessage) {
+                    profileMessage.textContent = data.error || 'Failed to update profile.';
+                    profileMessage.className = 'message error';
+                }
+            }
+        } catch (error) {
+            console.error('Profile update fetch error:', error);
+            if (profileMessage) {
+                profileMessage.textContent = 'An error occurred. Please try again.';
+                profileMessage.className = 'message error';
+            }
+        }
+    });
+}
+
 
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
-    copyrightYear.textContent = new Date().getFullYear();
+    if (copyrightYear) copyrightYear.textContent = new Date().getFullYear();
     checkAuthStatus(); // Check authentication state on page load
 
-    // Log to check if unlockButton is found
+    // Add the event listener for the unlock button
     if (unlockButton) {
-        console.log('Unlock button element found:', unlockButton);
         unlockButton.addEventListener('click', () => {
-            console.log('Unlock button clicked! Attempting to expand form.'); 
-            loginWindow.classList.add('expanded');
-            loginFormWrapper.classList.remove('collapsed');
-            console.log('loginWindow classes after click:', loginWindow.classList.value);
-            console.log('loginFormWrapper classes after click:', loginFormWrapper.classList.value);
+            if (loginWindow) loginWindow.classList.add('expanded');
+            if (loginFormWrapper) loginFormWrapper.classList.remove('collapsed');
         });
-    } else {
-        console.error('Unlock button element not found!');
+    }
+
+    // Add event listener for the user menu button on the dashboard
+    if (userMenuButton) {
+        userMenuButton.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevents the document click from immediately closing it
+            if (userDropdownMenu) userDropdownMenu.classList.toggle('hidden');
+        });
+    }
+
+    // Close the user dropdown if the user clicks anywhere else
+    document.addEventListener('click', (e) => {
+        if (userMenuButton && userDropdownMenu && !userMenuButton.contains(e.target) && !userDropdownMenu.contains(e.target)) {
+            userDropdownMenu.classList.add('hidden');
+        }
+    });
+
+    // Disable dates before the current day in the task due date calendar
+    const today = new Date().toISOString().split('T')[0];
+    const dueDateInput = document.getElementById('task-due-date');
+    if (dueDateInput) {
+        dueDateInput.setAttribute('min', today);
+    }
+
+    // =======================================================
+    // === NEW: FILE STORAGE NAVIGATION LOGIC ===
+    // =======================================================
+
+    if (fileStorageLink) {
+        fileStorageLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            // Show the file storage page and mark the link as active
+            showPage('file-storage-page', 'file-storage-link'); 
+            // Render the file list when the page is opened
+            renderStoredFiles();
+        });
+    }
+
+    // =======================================================
+    // === NEW: FILE UPLOAD (DRAG & DROP) LOGIC ===
+    // =======================================================
+
+    // --- Helper Functions for Drag & Drop ---
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        handleFiles(files);
+    }
+
+    // --- 4. Main File Handling Function (Updated to trigger simulation) ---
+    function handleFiles(files) {
+        if (files.length === 0) return;
+
+        if (fileListDisplay) fileListDisplay.innerHTML = ''; // Clear previous list
+        
+        // Simple display of selected files (temporarily lists them)
+        const ul = document.createElement('ul');
+        ul.style.listStyle = 'disc';
+        ul.style.paddingLeft = '20px';
+
+        Array.from(files).forEach(file => {
+            // Placeholder: Show file name and size
+            const li = document.createElement('li');
+            li.textContent = `• ${file.name} (${(file.size / 1024).toFixed(2)} KB) - Ready to Upload`;
+            ul.appendChild(li);
+        });
+
+        if (fileListDisplay) fileListDisplay.appendChild(ul);
+        console.log("Files ready to upload:", files);
+
+        // *** THIS IS THE KEY CHANGE: START THE SIMULATED UPLOAD ***
+        simulateFileUpload(files);
+    }
+
+    // --- 1. Button Click to Trigger File Input ---
+    if (triggerUploadBtn && fileUploadInput) {
+        triggerUploadBtn.addEventListener('click', () => {
+            fileUploadInput.click();
+        });
+    }
+
+    // --- 2. Handle File Selection ---
+    if (fileUploadInput) {
+        fileUploadInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+            // Note: input clearing is moved inside simulateFileUpload for better control
+        });
+    }
+
+    // --- 3. Drag and Drop Handlers ---
+    if (dropZone) {
+        // Prevent default drag behaviors
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        // Highlight drop zone on drag enter/over
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('highlight'), false);
+        });
+        
+        // Unhighlight drop zone on drag leave/drop
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('highlight'), false);
+        });
+
+        // Handle dropped files
+        dropZone.addEventListener('drop', handleDrop, false);
     }
 });
