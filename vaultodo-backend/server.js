@@ -10,9 +10,14 @@ const app = express();
 // --- CORS: support multiple frontends ---
 const cors = require('cors');
 const allowedOrigins = [
+  'https://mini-iii-rho.vercel.app',
+  'https://mini-iii-1.vercel.app',
+  'https://mini3-fe28nk14w-ilakkiyaram05s-projects.vercel.app',
+  'http://localhost:3000', // Local frontend
+  'http://localhost:5501'  // API direct testing
   'https://mini-iii-n.vercel.app',
-  /\.vercel\.app$/,   // allow all Vercel preview URLs
-  'http://localhost:3000'
+  'https://mini-iii-n-git-main-affrin332-affus-projects.vercel.app',
+  'https://mini-iii-l2wpx10er-affrin332-affus-projects.vercel.app'
 ];
 
 app.use(cors({
