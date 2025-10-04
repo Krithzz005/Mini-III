@@ -10,10 +10,13 @@ const app = express();
 
 // --- CORS: support multiple frontends ---
 const allowedOrigins = [
+  'https://mini-iii-n.vercel.app',
+  'https://mini-iii-n-git-main-affrin332-affus-projects.vercel.app',
+  'https://mini-iii-l2wpx10er-affrin332-affus-projects.vercel.app',
   'http://localhost:3000',
-  'http://localhost:5173',
-  'https://mini-iii-n1-bwaiwzdpk-affrin332-affus-projects.vercel.app'
+  'http://localhost:5173'
 ];
+
 
 app.use(cors({
   origin: function (origin, callback) {
